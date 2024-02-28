@@ -63,7 +63,7 @@ export async function fetchLatestInvoices() {
 
 export async function fetchCardData() {
   noStore();
-  await new Promise((resolve) => setTimeout(() => resolve('ok'), 500));
+  await new Promise((resolve) => setTimeout(() => resolve('ok'), 5000));
   try {
     // You can probably combine these into a single SQL query
     // However, we are intentionally splitting them to demonstrate

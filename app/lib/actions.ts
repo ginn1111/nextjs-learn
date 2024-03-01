@@ -26,10 +26,16 @@ export async function createInvoice(invoice: FormData) {
   const amount = fmtData.amount * 100;
   const date = new Date().toISOString().split('T')[0];
 
-  await sql`
+  try {
+    await sql`
     INSERT INTO invoices (customer_id, amount, status, date) 
       VALUES (${fmtData.customer_id}, ${amount}, ${fmtData.status}, ${date})
   `;
+  } catch (error) {
+    return {
+      message: 'Database Error: Failed to Create Invoice',
+    };
+  }
 
   revalidatePath('/dashboard/invoices');
   redirect('/dashboard/invoices');
@@ -45,17 +51,29 @@ export async function updateInvoice(id: string, invoice: FormData) {
   const date = new Date().toISOString().split('T')[0];
   const amount = fmtData.amount * 100;
 
-  await sql`
+  try {
+    await sql`
     UPDATE invoices set amount=${amount}, date=${date}, customer_id=${fmtData.customer_id} where id=${id}
   `;
+  } catch (error) {
+    return {
+      message: 'Database Error: Failed to update Invoice',
+    };
+  }
   revalidatePath('/dashboard/invoices');
   redirect('/dashboard/invoices');
 }
 
 export async function deleteInvoice(id: string) {
-  await sql`
+  try {
+    await sql`
     DELETE FROM invoices where id=${id}
   `;
+  } catch (error) {
+    return {
+      message: 'Database Error: Failed to delete Invoice',
+    };
+  }
 
   revalidatePath('/dashboard/invoices');
 }

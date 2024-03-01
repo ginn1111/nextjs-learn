@@ -6,30 +6,52 @@ import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/dist/client/components/navigation';
 
+export type State = {
+  errors?: {
+    customerId?: string[];
+    amount?: string[];
+    status?: string[];
+  };
+  message?: string | null;
+};
+
 const FormSchema = zod.object({
   id: zod.string(),
-  customer_id: zod.string(),
-  amount: zod.coerce.number(),
+  customerId: zod.string({
+    invalid_type_error: 'Please select a customer',
+  }),
+  amount: zod.coerce
+    .number()
+    .gt(0, { message: 'Please enter an amount greater than $0' }),
   date: zod.string(),
-  status: zod.enum(['pending', 'paid']),
+  status: zod.enum(['pending', 'paid'], {
+    invalid_type_error: 'Please select an invoice status.',
+  }),
 });
 
 const InvoiceSchema = FormSchema.omit({ id: true, date: true });
 
-export async function createInvoice(invoice: FormData) {
-  const fmtData = InvoiceSchema.parse({
+export async function createInvoice(currentState: State, invoice: FormData) {
+  const fmtData = InvoiceSchema.safeParse({
     amount: invoice.get('amount'),
-    customer_id: invoice.get('customerId'),
+    customerId: invoice.get('customerId'),
     status: invoice.get('status'),
   });
 
-  const amount = fmtData.amount * 100;
+  if (!fmtData.success) {
+    return {
+      errors: fmtData.error.flatten().fieldErrors,
+      message: 'Missing fields. Failed to create invoice',
+    };
+  }
+
+  const amount = fmtData.data.amount * 100;
   const date = new Date().toISOString().split('T')[0];
 
   try {
     await sql`
     INSERT INTO invoices (customer_id, amount, status, date) 
-      VALUES (${fmtData.customer_id}, ${amount}, ${fmtData.status}, ${date})
+      VALUES (${fmtData.data.customerId}, ${amount}, ${fmtData.data.status}, ${date})
   `;
   } catch (error) {
     return {
@@ -41,19 +63,30 @@ export async function createInvoice(invoice: FormData) {
   redirect('/dashboard/invoices');
 }
 
-export async function updateInvoice(id: string, invoice: FormData) {
-  const fmtData = InvoiceSchema.parse({
+export async function updateInvoice(
+  id: string,
+  currentState: State,
+  invoice: FormData,
+) {
+  const fmtData = InvoiceSchema.safeParse({
     amount: invoice.get('amount'),
-    customer_id: invoice.get('customerId'),
+    customerId: invoice.get('customerId'),
     status: invoice.get('status'),
   });
 
+  if (!fmtData.success) {
+    return {
+      errors: fmtData.error.flatten().fieldErrors,
+      message: 'Missing fields. Failed to create invoice',
+    };
+  }
+
   const date = new Date().toISOString().split('T')[0];
-  const amount = fmtData.amount * 100;
+  const amount = fmtData.data.amount * 100;
 
   try {
     await sql`
-    UPDATE invoices set amount=${amount}, date=${date}, customer_id=${fmtData.customer_id} where id=${id}
+    UPDATE invoices set amount=${amount}, date=${date}, customer_id=${fmtData.data.customerId} where id=${id}
   `;
   } catch (error) {
     return {

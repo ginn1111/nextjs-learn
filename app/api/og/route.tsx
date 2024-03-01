@@ -77,7 +77,5 @@ const handler = (request: NextRequest) => {
   }
 };
 
-export const config = {
-  runtime: 'edge',
-};
+export const runtime = 'edge';
 export { handler as GET };

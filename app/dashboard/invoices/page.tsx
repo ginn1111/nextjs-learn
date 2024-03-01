@@ -8,6 +8,10 @@ import { Suspense } from 'react';
 import { SearchParams } from '@/app/lib/definitions';
 import { fetchInvoicesPages } from '@/app/lib/data';
 
+export const metadata = {
+  title: 'Invoices',
+};
+
 export default async function Page({
   searchParams: { query = '', currentPage = 1 },
 }: {

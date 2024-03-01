@@ -9,6 +9,10 @@ import {
 } from '@/app/ui/skeletons';
 import { Suspense } from 'react';
 
+export const metadata = {
+  title: 'Dashboard',
+};
+
 export default async function Page() {
   return (
     <main>

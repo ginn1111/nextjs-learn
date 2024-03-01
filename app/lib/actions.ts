@@ -1,10 +1,11 @@
 'use server';
 import zod from 'zod';
 
-import { Invoice } from './definitions';
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/dist/client/components/navigation';
+import { signIn } from '@/auth';
+import { AuthError } from 'next-auth';
 
 export type State = {
   errors?: {
@@ -109,4 +110,25 @@ export async function deleteInvoice(id: string) {
   }
 
   revalidatePath('/dashboard/invoices');
+}
+
+export async function authenticate(
+  prevState: string | undefined,
+  credentials: FormData,
+) {
+  try {
+    await signIn('credentials', credentials);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case 'CredentialsSignin': {
+          return 'Invalid credentials';
+        }
+        default:
+          return 'Some thing went wrong';
+      }
+    }
+
+    throw error;
+  }
 }
